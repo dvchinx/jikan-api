@@ -11,6 +11,8 @@ class JikanCharacters {
         this.hasNextPage = true;
         this.currentView = 'list'; // 'list' o 'detail'
         this.selectedCharacter = null;
+        this.currentSection = 'home'; // 'home' o 'favorites'
+        this.favorites = this.loadFavorites();
         this.init();
     }
 
@@ -19,6 +21,7 @@ class JikanCharacters {
             this.charactersContainer = document.getElementById('characters-container');
             this.loadingElement = document.getElementById('loading');
             this.paginationContainer = document.getElementById('pagination-container');
+            this.updateFavoritesCount();
             this.loadCharacters();
         });
     }
@@ -73,15 +76,30 @@ class JikanCharacters {
         // Usar imagen por defecto si no hay imagen disponible
         const imageUrl = character.images?.jpg?.image_url || 'https://via.placeholder.com/200x280?text=Sin+Imagen';
         
+        // Verificar si está en favoritos
+        const isFavorite = this.isFavorite(character.mal_id);
+        const favoriteClass = isFavorite ? 'favorite-active' : '';
+        const favoriteIcon = isFavorite ? '❤️' : '🤍';
+        
         characterDiv.innerHTML = `
             <div class="character-image">
                 <img src="${imageUrl}" alt="${character.name}" loading="lazy">
+                <button class="favorite-btn ${favoriteClass}" data-character-id="${character.mal_id}">
+                    ${favoriteIcon}
+                </button>
             </div>
             <div class="character-info">
                 <h3 class="character-name">${character.name}</h3>
                 <p class="character-kanji">${character.name_kanji || 'N/A'}</p>
             </div>
         `;
+        
+        // Agregar evento click para el botón de favorito
+        const favoriteBtn = characterDiv.querySelector('.favorite-btn');
+        favoriteBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.toggleFavoriteUI(character, favoriteBtn);
+        });
         
         // Agregar evento click para mostrar detalles
         characterDiv.addEventListener('click', () => {
@@ -353,6 +371,122 @@ class JikanCharacters {
     showPagination() {
         if (this.paginationContainer) {
             this.paginationContainer.style.display = 'block';
+        }
+    }
+
+    // === FUNCIONES DE FAVORITOS ===
+
+    // Cargar favoritos desde LocalStorage
+    loadFavorites() {
+        const savedFavorites = localStorage.getItem('jikan-favorites');
+        return savedFavorites ? JSON.parse(savedFavorites) : {};
+    }
+
+    // Guardar favoritos en LocalStorage
+    saveFavorites() {
+        localStorage.setItem('jikan-favorites', JSON.stringify(this.favorites));
+        this.updateFavoritesCount();
+    }
+
+    // Alternar estado de favorito de un personaje
+    toggleFavorite(character) {
+        const characterId = character.mal_id;
+        
+        if (this.favorites[characterId]) {
+            delete this.favorites[characterId];
+        } else {
+            this.favorites[characterId] = {
+                mal_id: character.mal_id,
+                name: character.name,
+                name_kanji: character.name_kanji,
+                images: character.images,
+                favorites: character.favorites,
+                nicknames: character.nicknames
+            };
+        }
+        
+        this.saveFavorites();
+        
+        // Actualizar UI si estamos en la vista de favoritos
+        if (this.currentSection === 'favorites') {
+            this.showFavorites();
+        }
+    }
+
+    // Alternar favorito y actualizar UI inmediatamente
+    toggleFavoriteUI(character, buttonElement) {
+        // Alternar el estado en localStorage
+        this.toggleFavorite(character);
+        
+        // Actualizar el botón inmediatamente
+        const isNowFavorite = this.isFavorite(character.mal_id);
+        
+        if (isNowFavorite) {
+            buttonElement.classList.add('favorite-active');
+            buttonElement.textContent = '❤️';
+        } else {
+            buttonElement.classList.remove('favorite-active');
+            buttonElement.textContent = '🤍';
+        }
+        
+        // Agregar efecto visual temporal
+        buttonElement.style.transform = 'scale(1.3)';
+        setTimeout(() => {
+            buttonElement.style.transform = '';
+        }, 200);
+    }
+
+    // Verificar si un personaje está en favoritos
+    isFavorite(characterId) {
+        return this.favorites.hasOwnProperty(characterId);
+    }
+
+    // Actualizar contador de favoritos
+    updateFavoritesCount() {
+        const count = Object.keys(this.favorites).length;
+        const countElement = document.getElementById('favorites-count');
+        if (countElement) {
+            countElement.textContent = count;
+        }
+    }
+
+    // Mostrar sección (home o favorites)
+    showSection(section) {
+        this.currentSection = section;
+        
+        // Actualizar navegación
+        document.querySelectorAll('.nav-button').forEach(btn => btn.classList.remove('active'));
+        document.getElementById(`${section}-tab`).classList.add('active');
+        
+        if (section === 'home') {
+            this.currentView = 'list';
+            this.loadCharacters(this.currentPage);
+            this.showPagination();
+        } else if (section === 'favorites') {
+            this.showFavorites();
+            this.hidePagination();
+        }
+    }
+
+    // Mostrar vista de favoritos
+    showFavorites() {
+        if (!this.charactersContainer) return;
+
+        const favoriteCharacters = Object.values(this.favorites);
+        
+        if (favoriteCharacters.length === 0) {
+            this.charactersContainer.innerHTML = `
+                <div class="empty-favorites">
+                    <div class="empty-icon">💔</div>
+                    <h2>No tienes personajes favoritos</h2>
+                    <p>Marca algunos personajes como favoritos desde la sección Home para verlos aquí.</p>
+                    <button class="back-to-home-btn" onclick="jikanApp.showSection('home')">
+                        Ir a Home
+                    </button>
+                </div>
+            `;
+        } else {
+            this.displayCharacters(favoriteCharacters);
         }
     }
 }

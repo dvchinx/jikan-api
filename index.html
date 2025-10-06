@@ -14,6 +14,20 @@
         </div>
     </header>
 
+    <!-- Navigation -->
+    <nav class="main-navigation">
+        <div class="container">
+            <div class="nav-buttons">
+                <button id="home-tab" class="nav-button active" onclick="jikanApp.showSection('home')">
+                    🏠 Home
+                </button>
+                <button id="favorites-tab" class="nav-button" onclick="jikanApp.showSection('favorites')">
+                    ❤️ Favoritos (<span id="favorites-count">0</span>)
+                </button>
+            </div>
+        </div>
+    </nav>
+
     <main>
         <div class="container">
             <!-- Loading indicator -->
