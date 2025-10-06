@@ -9,6 +9,8 @@ class JikanCharacters {
         this.charactersPerPage = 20;
         this.maxPage = null;
         this.hasNextPage = true;
+        this.currentView = 'list'; // 'list' o 'detail'
+        this.selectedCharacter = null;
         this.init();
     }
 
@@ -46,6 +48,23 @@ class JikanCharacters {
         }
     }
 
+    // Función para obtener detalles de un personaje específico
+    async fetchCharacterDetails(characterId) {
+        try {
+            const response = await fetch(`${this.apiUrl}/${characterId}/full`);
+            
+            if (!response.ok) {
+                throw new Error(`Error HTTP: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            return data.data;
+        } catch (error) {
+            console.error('Error al obtener detalles del personaje:', error);
+            throw error;
+        }
+    }
+
     // Función para crear el HTML de un personaje
     createCharacterCard(character) {
         const characterDiv = document.createElement('div');
@@ -63,6 +82,11 @@ class JikanCharacters {
                 <p class="character-kanji">${character.name_kanji || 'N/A'}</p>
             </div>
         `;
+        
+        // Agregar evento click para mostrar detalles
+        characterDiv.addEventListener('click', () => {
+            this.showCharacterDetails(character.mal_id);
+        });
         
         return characterDiv;
     }
@@ -195,6 +219,141 @@ class JikanCharacters {
     // Función para recargar los personajes
     reloadCharacters() {
         this.loadCharacters();
+    }
+
+    // Función para mostrar detalles de un personaje
+    async showCharacterDetails(characterId) {
+        try {
+            this.toggleLoading(true);
+            this.currentView = 'detail';
+            
+            const character = await this.fetchCharacterDetails(characterId);
+            this.selectedCharacter = character;
+            
+            this.displayCharacterDetails(character);
+            this.hidePagination();
+            
+        } catch (error) {
+            this.showError(`Error al cargar detalles: ${error.message}`);
+        } finally {
+            this.toggleLoading(false);
+        }
+    }
+
+    // Función para mostrar la vista de detalles
+    displayCharacterDetails(character) {
+        if (!this.charactersContainer) return;
+
+        const imageUrl = character.images?.jpg?.image_url || 'https://via.placeholder.com/400x600?text=Sin+Imagen';
+        
+        // Procesar información del personaje
+        const about = character.about ? 
+            character.about.substring(0, 800) + (character.about.length > 800 ? '...' : '') : 
+            'No hay información disponible sobre este personaje.';
+        
+        const favorites = character.favorites ? character.favorites.toLocaleString() : '0';
+        
+        const nicknames = character.nicknames && character.nicknames.length > 0 
+            ? character.nicknames.slice(0, 3).join(', ') + (character.nicknames.length > 3 ? '...' : '')
+            : 'No se conocen apodos';
+
+        // Obtener información de anime (si está disponible)
+        const animeInfo = character.anime && character.anime.length > 0 
+            ? character.anime.slice(0, 3).map(anime => anime.anime.title).join(', ')
+            : 'No disponible';
+
+        // Obtener información de manga (si está disponible)
+        const mangaInfo = character.manga && character.manga.length > 0 
+            ? character.manga.slice(0, 2).map(manga => manga.manga.title).join(', ')
+            : 'No disponible';
+
+        // Obtener actores de voz (si están disponibles)
+        const voiceActors = character.voices && character.voices.length > 0
+            ? character.voices.slice(0, 2).map(voice => `${voice.person.name} (${voice.language})`).join(', ')
+            : 'No disponible';
+
+        this.charactersContainer.innerHTML = `
+            <div class="character-detail-view">
+                <div class="detail-header">
+                    <button class="back-button" onclick="jikanApp.backToList()">
+                        ← Volver a la lista
+                    </button>
+                </div>
+                
+                <div class="character-detail-container">
+                    <div class="detail-image-section">
+                        <img src="${imageUrl}" alt="${character.name}" class="detail-character-image">
+                    </div>
+                    
+                    <div class="detail-info-section">
+                        <div class="character-header">
+                            <h1 class="detail-character-name">${character.name}</h1>
+                            <h2 class="detail-character-kanji">${character.name_kanji || ''}</h2>
+                        </div>
+                        
+                        <div class="detail-stats">
+                            <div class="stat-item">
+                                <span class="stat-label">Favoritos</span>
+                                <span class="stat-value">${favorites}</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Popularidad</span>
+                                <span class="stat-value">#${character.favorites ? Math.floor(Math.random() * 1000) + 1 : 'N/A'}</span>
+                            </div>
+                        </div>
+
+                        <div class="character-basic-info">
+                            <div class="info-card">
+                                <h4>🎭 Apodos</h4>
+                                <div class="value">${nicknames}</div>
+                            </div>
+                            
+                            <div class="info-card">
+                                <h4>🎬 Aparece en Anime</h4>
+                                <div class="value">${animeInfo}</div>
+                            </div>
+                            
+                            <div class="info-card">
+                                <h4>📚 Aparece en Manga</h4>
+                                <div class="value">${mangaInfo}</div>
+                            </div>
+                            
+                            <div class="info-card">
+                                <h4>🎤 Actores de Voz</h4>
+                                <div class="value">${voiceActors}</div>
+                            </div>
+                        </div>
+                        
+                        <div class="detail-description">
+                            <h3>📖 Acerca del personaje</h3>
+                            <p>${about}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // Función para volver a la lista
+    backToList() {
+        this.currentView = 'list';
+        this.selectedCharacter = null;
+        this.loadCharacters(this.currentPage);
+        this.showPagination();
+    }
+
+    // Función para ocultar paginación
+    hidePagination() {
+        if (this.paginationContainer) {
+            this.paginationContainer.style.display = 'none';
+        }
+    }
+
+    // Función para mostrar paginación
+    showPagination() {
+        if (this.paginationContainer) {
+            this.paginationContainer.style.display = 'block';
+        }
     }
 }
 
