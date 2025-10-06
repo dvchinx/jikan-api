@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jikan Moe - Personajes de Anime</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>🎌 Personajes de Anime</h1>
+            <p>Explorando personajes a través de la API de Jikan Moe</p>
+        </div>
+    </header>
+
+    <main>
+        <div class="container">
+            <!-- Loading indicator -->
+            <div id="loading" class="loading">
+                <div class="spinner"></div>
+                <p>Cargando personajes...</p>
+            </div>
+
+            <!-- Characters container -->
+            <div id="characters-container" class="characters-grid">
+                <!-- Los personajes se cargarán aquí dinámicamente -->
+            </div>
+
+            <!-- Pagination container -->
+            <div id="pagination-container" class="pagination-wrapper">
+                <!-- Los controles de paginación se cargarán aquí dinámicamente -->
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>Datos obtenidos de <a href="https://jikan.moe/" target="_blank">Jikan API</a></p>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="scripts/app.js"></script>
+</body>
+</html>
