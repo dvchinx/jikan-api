@@ -450,7 +450,7 @@ class JikanCharacters {
         }
     }
 
-    // Mostrar sección (home o favorites)
+    // Mostrar sección (home, favorites o explorer)
     showSection(section) {
         this.currentSection = section;
         
@@ -458,13 +458,29 @@ class JikanCharacters {
         document.querySelectorAll('.nav-button').forEach(btn => btn.classList.remove('active'));
         document.getElementById(`${section}-tab`).classList.add('active');
         
+        // Ocultar/mostrar contenedores según la sección
+        const charactersContainer = document.getElementById('characters-container');
+        const paginationContainer = document.getElementById('pagination-container');
+        const explorerContainer = document.getElementById('explorer-container');
+        
         if (section === 'home') {
             this.currentView = 'list';
+            charactersContainer.style.display = 'grid';
+            paginationContainer.style.display = 'block';
+            explorerContainer.style.display = 'none';
             this.loadCharacters(this.currentPage);
             this.showPagination();
         } else if (section === 'favorites') {
+            charactersContainer.style.display = 'grid';
+            paginationContainer.style.display = 'none';
+            explorerContainer.style.display = 'none';
             this.showFavorites();
             this.hidePagination();
+        } else if (section === 'explorer') {
+            charactersContainer.style.display = 'none';
+            paginationContainer.style.display = 'none';
+            explorerContainer.style.display = 'block';
+            this.showExplorer();
         }
     }
 
@@ -487,6 +503,149 @@ class JikanCharacters {
             `;
         } else {
             this.displayCharacters(favoriteCharacters);
+        }
+    }
+
+    // Obtener anime basado en personajes favoritos
+    async fetchAnimeFromFavorites() {
+        const favoriteCharacters = Object.values(this.favorites);
+        
+        if (favoriteCharacters.length === 0) {
+            return [];
+        }
+
+        try {
+            const animeIds = new Set();
+            
+            // Obtener anime de los primeros 5 personajes favoritos para evitar demasiadas requests
+            const charactersToCheck = favoriteCharacters.slice(0, 5);
+            
+            for (const character of charactersToCheck) {
+                try {
+                    const response = await fetch(`https://api.jikan.moe/v4/characters/${character.mal_id}/full`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.data.anime) {
+                            data.data.anime.forEach(anime => {
+                                animeIds.add(anime.anime.mal_id);
+                            });
+                        }
+                    }
+                    // Pequeña pausa para no saturar la API
+                    await new Promise(resolve => setTimeout(resolve, 333));
+                } catch (error) {
+                    console.warn(`Error obteniendo anime para personaje ${character.mal_id}:`, error);
+                }
+            }
+
+            // Convertir Set a Array y tomar los primeros 12 anime
+            const uniqueAnimeIds = Array.from(animeIds).slice(0, 12);
+            const animePromises = uniqueAnimeIds.map(async (animeId) => {
+                try {
+                    const response = await fetch(`https://api.jikan.moe/v4/anime/${animeId}`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        return data.data;
+                    }
+                } catch (error) {
+                    console.warn(`Error obteniendo anime ${animeId}:`, error);
+                }
+                return null;
+            });
+
+            const animeResults = await Promise.all(animePromises);
+            return animeResults.filter(anime => anime !== null);
+
+        } catch (error) {
+            console.error('Error obteniendo recomendaciones de anime:', error);
+            return [];
+        }
+    }
+
+    // Crear card de anime
+    createAnimeCard(anime) {
+        const animeDiv = document.createElement('div');
+        animeDiv.className = 'anime-card';
+        
+        const imageUrl = anime.images?.jpg?.large_image_url || anime.images?.jpg?.image_url || 'https://via.placeholder.com/280x400?text=Sin+Imagen';
+        const score = anime.score ? anime.score.toFixed(1) : 'N/A';
+        const synopsis = anime.synopsis || 'Sin sinopsis disponible.';
+        const maxLength = 200;
+        const truncatedSynopsis = synopsis.length > maxLength ? synopsis.substring(0, maxLength) + '...' : synopsis;
+
+        animeDiv.innerHTML = `
+            <img src="${imageUrl}" alt="${anime.title}" class="anime-poster" loading="lazy">
+            <div class="anime-info">
+                <h3 class="anime-title">${anime.title}</h3>
+                <div class="anime-score">⭐ ${score}</div>
+                <p class="anime-synopsis">${truncatedSynopsis}</p>
+                ${anime.genres && anime.genres.length > 0 ? `
+                    <div class="anime-genres">
+                        ${anime.genres.slice(0, 3).map(genre => `<span class="anime-genre">${genre.name}</span>`).join('')}
+                    </div>
+                ` : ''}
+            </div>
+        `;
+
+        // Evento click para abrir el anime en MyAnimeList
+        animeDiv.addEventListener('click', () => {
+            window.open(anime.url, '_blank');
+        });
+
+        return animeDiv;
+    }
+
+    // Mostrar la sección explorer
+    async showExplorer() {
+        const explorerContainer = document.getElementById('explorer-container');
+        const animeRecommendations = document.getElementById('anime-recommendations');
+        
+        if (!explorerContainer || !animeRecommendations) {
+            console.error('Contenedores del explorador no encontrados');
+            return;
+        }
+
+        // Mostrar loading
+        animeRecommendations.innerHTML = `
+            <div class="loading-explorer">
+                <div class="spinner"></div>
+                <p>Descubriendo anime basado en tus favoritos...</p>
+            </div>
+        `;
+
+        try {
+            const recommendedAnime = await this.fetchAnimeFromFavorites();
+            
+            animeRecommendations.innerHTML = '';
+
+            if (recommendedAnime.length === 0) {
+                animeRecommendations.innerHTML = `
+                    <div class="no-recommendations">
+                        <h3>🎭 No hay recomendaciones disponibles</h3>
+                        <p>Agrega algunos personajes a tus favoritos para descubrir anime increíbles.</p>
+                        <button class="nav-button" onclick="jikanApp.showSection('home')" style="margin-top: 1rem;">
+                            Ir a Home
+                        </button>
+                    </div>
+                `;
+            } else {
+                recommendedAnime.forEach(anime => {
+                    const animeCard = this.createAnimeCard(anime);
+                    animeRecommendations.appendChild(animeCard);
+                });
+            }
+
+        } catch (error) {
+            console.error('Error mostrando explorer:', error);
+            animeRecommendations.innerHTML = `
+                <div class="no-recommendations">
+                    <h3>❌ Error cargando recomendaciones</h3>
+                    <p>Hubo un problema obteniendo las recomendaciones. Inténtalo de nuevo más tarde.</p>
+                    <button class="nav-button" onclick="jikanApp.showExplorer()" style="margin-top: 1rem;">
+                        Reintentar
+                    </button>
+                </div>
+            `;
         }
     }
 }

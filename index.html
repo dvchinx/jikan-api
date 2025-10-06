@@ -24,6 +24,9 @@
                 <button id="favorites-tab" class="nav-button" onclick="jikanApp.showSection('favorites')">
                     ❤️ Favoritos (<span id="favorites-count">0</span>)
                 </button>
+                <button id="explorer-tab" class="nav-button" onclick="jikanApp.showSection('explorer')">
+                    🔍 Explorador
+                </button>
             </div>
         </div>
     </nav>
@@ -44,6 +47,17 @@
             <!-- Pagination container -->
             <div id="pagination-container" class="pagination-wrapper">
                 <!-- Los controles de paginación se cargarán aquí dinámicamente -->
+            </div>
+
+            <!-- Explorer container -->
+            <div id="explorer-container" class="explorer-section" style="display: none;">
+                <div class="explorer-header">
+                    <h2>🔍 Explorador de Anime</h2>
+                    <p>Descubre anime basándote en tus personajes favoritos</p>
+                </div>
+                <div id="anime-recommendations" class="anime-grid">
+                    <!-- Las recomendaciones de anime se cargarán aquí dinámicamente -->
+                </div>
             </div>
         </div>
     </main>
