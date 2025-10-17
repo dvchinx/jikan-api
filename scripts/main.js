@@ -14,5 +14,7 @@ window.jikanApp = {
     showExplorer: () => jikanApp?.showExplorer(),
     backToList: () => jikanApp?.backToList(),
     loadCharacters: () => jikanApp?.loadCharacters(),
-    goToPage: (page) => jikanApp?.goToPage(page)
+    goToPage: (page) => jikanApp?.goToPage(page),
+    showInfoModal: () => jikanApp?.showInfoModal(),
+    closeInfoModal: () => jikanApp?.closeInfoModal()
 };

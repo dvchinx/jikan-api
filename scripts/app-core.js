@@ -32,12 +32,15 @@ class JikanApp {
     }
 
     init() {
-        document.addEventListener('DOMContentLoaded', () => {
-            this.setupDOMElements();
-            this.setupEventListeners();
-            DomUtils.updateFavoritesCount(StorageService.getFavoritesCount(this.favorites));
-            this.loadCharacters();
-        });
+        console.log('Inicializando aplicación...');
+        this.setupDOMElements();
+        console.log('DOM elements configurados');
+        this.setupEventListeners();
+        console.log('Event listeners configurados');
+        DomUtils.updateFavoritesCount(StorageService.getFavoritesCount(this.favorites));
+        console.log('Contador de favoritos actualizado');
+        this.loadCharacters();
+        console.log('Cargando personajes...');
 
         // Agregar listener global para errores de imágenes
         document.addEventListener('error', (e) => {
@@ -54,8 +57,20 @@ class JikanApp {
     }
 
     setupEventListeners() {
-        this.setupSearchListeners();
-        this.setupFilterListeners();
+        console.log('Configurando event listeners...');
+        if (typeof this.setupSearchListeners === 'function') {
+            this.setupSearchListeners();
+            console.log('Search listeners configurados');
+        } else {
+            console.warn('setupSearchListeners no está disponible');
+        }
+        
+        if (typeof this.setupFilterListeners === 'function') {
+            this.setupFilterListeners();
+            console.log('Filter listeners configurados');
+        } else {
+            console.warn('setupFilterListeners no está disponible');
+        }
     }
 
     // ===== NAVEGACIÓN =====
@@ -107,9 +122,11 @@ class JikanApp {
     
     async loadCharacters(page = this.currentPage) {
         try {
+            console.log('Iniciando carga de personajes, página:', page);
             this.toggleLoading(true);
             
             const result = await ApiService.fetchCharacters(page);
+            console.log('Resultado de API:', result);
             
             if (result.characters && result.characters.length > 0) {
                 this.currentPage = page;
@@ -117,20 +134,47 @@ class JikanApp {
                 // Guardar personajes y aplicar filtros si es necesario
                 this.currentCharacters = result.characters;
                 if (this.currentSort !== SORT_OPTIONS.DEFAULT || this.currentFavoritesFilter !== FILTER_OPTIONS.ALL) {
-                    this.applyFilters();
+                    if (typeof this.applyFilters === 'function') {
+                        this.applyFilters();
+                    } else {
+                        console.warn('applyFilters no está disponible, usando displayCharacters');
+                        this.displayCharacters(result.characters);
+                    }
                 } else {
                     this.displayCharacters(result.characters);
                 }
                 
-                this.updatePagination(result.pagination);
+                if (typeof this.updatePagination === 'function') {
+                    this.updatePagination(result.pagination);
+                } else {
+                    console.warn('updatePagination no está disponible');
+                }
+                console.log('Personajes cargados exitosamente');
             } else {
-                this.showError('No se encontraron personajes');
+                console.log('No se encontraron personajes');
+                if (typeof this.showError === 'function') {
+                    this.showError('No se encontraron personajes');
+                } else {
+                    console.error('showError no está disponible para mostrar mensaje de no personajes');
+                    if (this.charactersContainer) {
+                        this.charactersContainer.innerHTML = '<div class="error">No se encontraron personajes</div>';
+                    }
+                }
             }
             
         } catch (error) {
-            this.showError(error.message);
+            console.error('Error cargando personajes:', error);
+            if (typeof this.showError === 'function') {
+                this.showError(error.message);
+            } else {
+                console.error('showError no está disponible:', error.message);
+                if (this.charactersContainer) {
+                    this.charactersContainer.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+                }
+            }
         } finally {
             this.toggleLoading(false);
+            console.log('Loading desactivado');
         }
     }
 

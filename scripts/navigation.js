@@ -122,8 +122,11 @@ Object.assign(JikanApp.prototype, {
     // ===== UTILIDADES DE UI =====
     
     toggleLoading(show) {
+        console.log('Toggle loading:', show, 'Element:', this.loadingElement);
         if (this.loadingElement) {
             this.loadingElement.style.display = show ? 'block' : 'none';
+        } else {
+            console.error('Loading element no encontrado');
         }
     },
 
