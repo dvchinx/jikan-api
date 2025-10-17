@@ -17,16 +17,33 @@
     <!-- Navigation -->
     <nav class="main-navigation">
         <div class="container">
-            <div class="nav-buttons">
-                <button id="home-tab" class="nav-button active" onclick="jikanApp.showSection('home')">
-                    🏠 Home
-                </button>
-                <button id="favorites-tab" class="nav-button" onclick="jikanApp.showSection('favorites')">
-                    ❤️ Favoritos (<span id="favorites-count">0</span>)
-                </button>
-                <button id="explorer-tab" class="nav-button" onclick="jikanApp.showSection('explorer')">
-                    🔍 Explorador
-                </button>
+            <div class="nav-content">
+                <div class="nav-buttons">
+                    <button id="home-tab" class="nav-button active" onclick="jikanApp.showSection('home')">
+                        🏠 Home
+                    </button>
+                    <button id="favorites-tab" class="nav-button" onclick="jikanApp.showSection('favorites')">
+                        ❤️ Favoritos (<span id="favorites-count">0</span>)
+                    </button>
+                    <button id="explorer-tab" class="nav-button" onclick="jikanApp.showSection('explorer')">
+                        🔍 Original
+                    </button>
+                </div>
+                <div class="search-container">
+                    <input 
+                        type="text" 
+                        id="character-search" 
+                        class="search-input" 
+                        placeholder="🔍 Buscar personajes..."
+                        autocomplete="off"
+                    >
+                    <button id="search-button" class="search-btn">
+                        Buscar
+                    </button>
+                    <button id="clear-search" class="clear-btn" style="display: none;">
+                        ✕
+                    </button>
+                </div>
             </div>
         </div>
     </nav>
@@ -37,6 +54,46 @@
             <div id="loading" class="loading">
                 <div class="spinner"></div>
                 <p>Cargando personajes...</p>
+            </div>
+
+            <!-- Filter controls -->
+            <div id="filter-controls" class="filter-section" style="display: none;">
+                <div class="filter-header">
+                    <h3>🎯 Filtros</h3>
+                    <button id="reset-filters" class="reset-filters-btn">
+                        Limpiar filtros
+                    </button>
+                </div>
+                <div class="filter-options">
+                    <div class="filter-group">
+                        <label for="sort-select">📊 Ordenar por:</label>
+                        <select id="sort-select" class="filter-select">
+                            <option value="default">Por defecto</option>
+                            <option value="name-asc">Nombre A-Z</option>
+                            <option value="name-desc">Nombre Z-A</option>
+                            <option value="favorites">Favoritos primero</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="favorites-filter">❤️ Favoritos:</label>
+                        <select id="favorites-filter" class="filter-select">
+                            <option value="all">Todos</option>
+                            <option value="favorites-only">Solo favoritos</option>
+                            <option value="non-favorites">Sin favoritos</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>🎭 Vista:</label>
+                        <div class="filter-buttons">
+                            <button id="grid-view" class="view-btn active" data-view="grid">
+                                ⊞ Cuadrícula
+                            </button>
+                            <button id="list-view" class="view-btn" data-view="list">
+                                ☰ Lista
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Characters container -->
@@ -69,6 +126,16 @@
     </footer>
 
     <!-- Scripts -->
-    <script src="scripts/app.js"></script>
+    <script src="scripts/config.js"></script>
+    <script src="scripts/storage.js"></script>
+    <script src="scripts/api.js"></script>
+    <script src="scripts/dom-utils.js"></script>
+    <script src="scripts/app-core.js"></script>
+    <script src="scripts/search.js"></script>
+    <script src="scripts/filters.js"></script>
+    <script src="scripts/favorites.js"></script>
+    <script src="scripts/explorer.js"></script>
+    <script src="scripts/navigation.js"></script>
+    <script src="scripts/main.js"></script>
 </body>
 </html>
